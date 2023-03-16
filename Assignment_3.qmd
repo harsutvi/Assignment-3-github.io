@@ -1,0 +1,99 @@
+---
+title: "Assignment 3 - html"
+format: html
+editor: visual
+echo: false
+---
+
+## Assignment 3
+
+#### Task 1
+
+```{r, warning=FALSE, message = FALSE}
+
+rm(list=ls())
+library(jsonlite)
+library(tidyverse)
+
+df <- fromJSON("https://static01.nyt.com/newsgraphics/2021/12/20/us-coronavirus-deaths-2021/ff0adde21623e111d8ce103fedecf7ffc7906264/scatter.json") %>% 
+  mutate(state = state.abb[match(name, state.name)])
+
+df[9, 7] = "D.C"
+```
+
+```{r, warning=FALSE, message = FALSE, fig.subcap="Source: New York Times database of reports from state and local health agencies, Centers for Disease Control and Prevention Notes: Chart shows deaths reported since universal vaccine eligibility on April 19, 2021. Vaccination rate is the percentage of the total population fully vaccinated as of Dec. 20, 2021."}
+
+# Making a plot in p1
+p1 <- ggplot(df, aes(x = fully_vaccinated_pct_of_pop, 
+               y = deaths_per_100k, 
+               label = state)
+       ) +
+  
+  geom_point(color = "forestgreen", alpha = 0.5, 
+             size = 2, stroke = 0.5
+             ) +
+  
+  geom_text(nudge_y = 0.4, size = 2.5, color = "grey50"
+            ) +
+  
+  geom_segment(x = 0.545, y = 18.2, 
+               xend = 0.52, yend = 19, 
+               arrow = arrow(length = unit(0.2, "cm"), angle = 15)
+               ) +
+  
+  annotate("text", x=0.56, y=17.5, size=2, face = "bold",
+          label= "Lower vaccination rate, \n higher death rate"
+          ) +
+  
+  geom_segment(x = 0.73, y = 9.5, 
+               xend = 0.76, yend = 8.6, 
+               arrow = arrow(length = unit(0.2, "cm"), angle = 18) 
+               ) +
+  
+  annotate("text", x=0.74, y=10.5, size=2, face = "bold",
+          label= "Higher vaccination rate, \n lower death rate"
+          ) +
+  
+  labs(x = "Share of population fully vaccinated",
+       y = NULL,
+       subtitle = "avg. monthly deaths per 100.000",
+       title = "Covid-19 deaths since universal adult vaccine eligibility compared with \n vaccination rates"
+       ) +
+  
+  scale_y_continuous(labels = function(x) ifelse(x==0, "", x), #removing 0 label from y-axis
+                     limits = c(0, 20), #setting limits of y-axis
+                     expand = c(0, 0) #to center the figure
+                     ) +
+  
+  scale_x_continuous(labels = scales::percent_format(), #changing x-axis label to percentage
+                     limits = c(0.45, 0.8), #setting limits of x-axis
+                     breaks = seq(0, 1, 0.05), #setting interval of x-axis label(every 5%)
+                     expand = c(0, 0)
+                     ) +
+  theme_bw() + #adding white background
+  
+  #adding some touches to make it more alike the original plot
+    theme(plot.subtitle=element_text(size = 7, color = "grey50", vjust = -1, hjust = 0.01),
+          plot.title = element_text(size = 10, hjust = 0.5, face = "bold"),
+          axis.text.y = element_text(vjust = -0.7, hjust = 1.5, size = 7, color = "grey50"),
+          axis.text.x = element_text(color = "grey50"),
+          axis.title.x = element_text(color = "grey50", size = 7),
+          panel.border = element_rect(color = "grey50", fill = NA, size = 0.5, linetype = "dotted")
+          )
+#printing
+p1
+```
+
+#### Task 2
+
+```{r}
+lm(deaths_per_100k ~ fully_vaccinated_pct_of_pop, data = df)
+```
+
+-36.66 is the value of the coeffiecient. It´s an estimated slope. Since we are working with percentage that would mean that for every percent change in vaccination, the death rate per 100k would decrease by approximately 0.37.
+
+The intercept value is the y-value where x would be equal to 0. It´s an estimate of what the death rate for covid would be per 100k if nobody were vaccinated.
+
+```{r, warning=FALSE, message = FALSE, fig.subcap="Source: New York Times database of reports from state and local health agencies, Centers for Disease Control and Prevention Notes: Chart shows deaths reported since universal vaccine eligibility on April 19, 2021. Vaccination rate is the percentage of the total population fully vaccinated as of Dec. 20, 2021."}
+p1 + geom_smooth(method = lm, se = FALSE, size = 0.7)
+```
